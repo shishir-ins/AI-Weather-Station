@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>AI Weather Station</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div id="weatherBackground"></div>
+<div id="rainContainer"></div>
+<div id="sunGlow"></div>
+<header>
+
+<h1>🌦 AI Weather Station</h1>
+
+<button id="themeToggle">🌙</button>
+
+</header>
+
+<nav>
+
+<button onclick="showTab('dashboard')">Dashboard</button>
+<button onclick="showTab('analytics')">Analytics</button>
+<button onclick="showTab('ai')">AI Center</button>
+<button onclick="showTab('chat')">Chatbot</button>
+
+</nav>
+
+<section id="dashboard" class="tab">
+<div id="sunnyBackground"></div>
+<div class="dashboard-grid">
+<div class="card">
+<h3>Weather Status</h3>
+
+<div id="weatherIcon" style="font-size:60px;">⛅</div>
+
+<p id="weatherStatus">Analyzing...</p>
+
+</div>
+<div class="card">
+<h3>🌡 Temperature</h3>
+<p id="temp">--</p>
+
+</div>
+
+<div class="card">
+<h3>💧 Humidity</h3>
+<p id="hum">--</p>
+</div>
+
+<div class="card">
+<h3>🌧 Rain Sensor</h3>
+<p id="rain">--</p>
+</div>
+
+</div>
+
+</section>
+
+<section id="analytics" class="tab hidden">
+    <div id="fogBackground"></div>
+    <div id="analyticsBackground"></div>
+
+<h2>Weather Graphs</h2>
+
+<canvas id="tempChart" width="400" height="150"></canvas>
+
+<canvas id="humChart" width="400" height="150"></canvas>
+
+</section>
+
+<section id="ai" class="tab hidden">
+<div id="aiStormBackground"></div>
+<div id="lightningFlash"></div>
+<div id="stormBackground"></div>
+
+
+<h2>AI Weather Analysis</h2>
+
+<div class="dashboard-grid">
+
+<div class="card">
+<h3>Rain Probability</h3>
+<p id="rainProb">--</p>
+</div>
+
+<div class="card">
+<h3>Temperature Trend</h3>
+<p id="tempTrend">--</p>
+</div>
+
+<div class="card">
+<h3>Humidity Trend</h3>
+<p id="humTrend">--</p>
+</div>
+
+<div class="card">
+<h3>AI Suggestion</h3>
+<p id="aiSuggestion">Analyzing weather data...</p>
+</div>
+
+</div>
+
+</section>
+
+<section id="chat" class="tab hidden">
+<div id="chatBackground"></div>
+<div class="chatContainer">
+
+<div class="chatHeader">
+🤖 Weather AI Assistant
+</div>
+
+<div id="chatbox" class="chatMessages"></div>
+
+<div class="chatInputArea">
+<input id="userInput" placeholder="Ask anything about the weather...">
+<button onclick="sendMessage()">➤</button>
+</div>
+
+</div>
+
+<div class="robotBackground">🤖</div>
+
+</section>
+
+
+<script src="dashboard.js"></script>
+</body>
+</html>
