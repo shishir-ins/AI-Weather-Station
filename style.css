@@ -1,0 +1,600 @@
+:root{
+--bg: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+--card-bg: rgba(255, 255, 255, 0.35);
+--card-border: rgba(255, 255, 255, 0.6);
+--text: #1d1d1f;
+--text-secondary: #515154;
+--glass-blur: 40px;
+--accent: #007aff;
+}
+
+body.dark, .dark{
+--bg: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+--card-bg: rgba(20, 30, 45, 0.4);
+--card-border: rgba(255, 255, 255, 0.1);
+--text: #ffffff;
+--text-secondary: #a1a1a6;
+--accent: #0a84ff;
+}
+
+*{
+box-sizing:border-box;
+font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+margin: 0;
+padding: 0;
+}
+
+body{
+background:var(--bg);
+color:var(--text);
+transition: background 0.5s ease, color 0.5s ease;
+overflow-x: hidden;
+min-height: 100vh;
+}
+
+/* Header */
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 40px;
+font-size:20px;
+font-weight:600;
+letter-spacing: -0.3px;
+background: var(--card-bg);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+border-bottom: 1px solid var(--card-border);
+box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* lifted up dropping a shadow */
+z-index: 100;
+position: relative;
+border-bottom-left-radius: 24px;
+border-bottom-right-radius: 24px;
+margin-bottom: 10px;
+}
+
+h1, h2, h3 {
+color: var(--text);
+font-weight: 600;
+letter-spacing: -0.5px;
+}
+
+/* Navigation */
+
+nav{
+display:flex;
+justify-content: center; /* Center every button */
+gap:12px;
+padding:15px 40px;
+position: relative;
+z-index: 100;
+flex-wrap: wrap;
+}
+
+nav button{
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+color: var(--text);
+padding: 10px 24px;
+border-radius: 30px; /* Apple pill shape */
+cursor: pointer;
+font-size: 15px;
+font-weight: 500;
+transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+letter-spacing: -0.2px;
+}
+
+nav button:hover{
+transform: translateY(-2px);
+box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+background: var(--card-bg);
+border-color: var(--accent);
+color: var(--text);
+}
+
+nav button:active {
+transform: translateY(0) scale(0.98);
+}
+
+/* Tabs */
+
+.tab{
+padding:30px 40px;
+max-width: 1200px;
+margin: 0 auto;
+position: relative;
+animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+.hidden{
+display:none !important;
+}
+
+/* Weather Cards */
+
+.dashboard-grid{
+display:grid;
+grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+gap:24px;
+margin-top:30px;
+}
+
+.card{
+background: var(--card-bg);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+border: 1px solid var(--card-border);
+border-radius: 24px;
+padding: 30px 25px;
+text-align: center;
+box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+display: flex;
+flex-direction: column;
+align-items: center;
+overflow: hidden; /* Fixes shine bleed */
+}
+
+/* Diagonal Shine Effect on Cards */
+.card::before {
+content: "";
+position: absolute;
+top: 0;
+left: -100%;
+width: 50%;
+height: 100%;
+background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+);
+transform: skewX(-25deg);
+transition: 0.5s;
+pointer-events: none;
+z-index: 1;
+}
+
+body.dark .card::before{
+background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+);
+}
+
+.card:hover::before {
+left: 200%;
+transition: 0.7s ease-in-out;
+}
+
+.card:hover{
+transform:translateY(-8px);
+box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+border-color: var(--accent);
+}
+
+.card h3{
+margin-bottom:12px;
+font-weight:500;
+font-size: 14px;
+color: var(--text-secondary);
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+
+.card p{
+font-size:38px;
+font-weight:700;
+letter-spacing: -1px;
+margin-top: 5px;
+color: var(--text);
+}
+
+#weatherIcon {
+font-size: 64px !important;
+margin-top: 5px;
+margin-bottom: 5px;
+text-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Extra AI Card Polish */
+#aiSuggestion {
+font-size: 18px;
+font-weight: 500;
+line-height: 1.4;
+letter-spacing: -0.2px;
+background: -webkit-linear-gradient(45deg, #ff2a85, #8a2be2, #00e5ff);
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+
+/* Graph Section */
+
+canvas{
+background: var(--card-bg);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+border: 1px solid var(--card-border);
+border-radius:24px;
+padding:20px;
+margin-top:24px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+width: 100% !important;
+max-width: 100%;
+}
+
+h2 {
+margin-bottom: 20px;
+font-size: 28px;
+}
+
+/* Weather Background Animations */
+#weatherBackground{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+z-index:-1;
+transition:1s;
+background: var(--bg);
+}
+
+#rainContainer{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+overflow:hidden;
+z-index:-1;
+}
+
+.raindrop{
+position:absolute;
+width:2px;
+height:15px;
+background:rgba(255,255,255,0.6);
+animation:rainFall linear infinite;
+}
+
+@keyframes rainFall{
+0%{ transform:translateY(-100px); }
+100%{ transform:translateY(100vh); }
+}
+
+.sunGlow{
+position:fixed;
+top:-100px;
+right:-100px;
+width:400px;
+height:400px;
+background:radial-gradient(circle,#ffd54f,#ff9800,transparent);
+opacity:0.6;
+pointer-events:none;
+z-index:-1;
+}
+
+/* AI Radar */
+#aiRadar{
+width:200px;
+height:200px;
+border-radius:50%;
+border:2px solid rgba(0, 229, 255, 0.4);
+margin:auto;
+position:relative;
+box-shadow:0 0 40px rgba(0,229,255,0.2);
+overflow:hidden;
+background: radial-gradient(circle, rgba(0,229,255,0.05), transparent);
+}
+
+#aiRadar::after{
+content:"";
+position:absolute;
+width:50%;
+height:2px;
+background: linear-gradient(90deg, transparent, #00e5ff);
+top:50%;
+left:50%;
+transform-origin:left center;
+animation:radarSweep 2s linear infinite;
+}
+
+#aiRadar::before{
+content:"";
+position:absolute;
+width:100%;
+height:100%;
+border-radius:50%;
+border:1px solid rgba(0,229,255,0.2);
+animation:radarPulse 3s infinite;
+}
+
+@keyframes radarSweep{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
+
+@keyframes radarPulse{
+0%{transform:scale(0.8);opacity:0.5}
+70%{transform:scale(1.2);opacity:0}
+100%{opacity:0}
+}
+
+
+/* Chatbot Section */
+.chatContainer{
+width: 100%;
+max-width: 800px;
+margin: 20px auto;
+background: var(--card-bg);
+backdrop-filter: blur(var(--glass-blur));
+-webkit-backdrop-filter: blur(var(--glass-blur));
+border: 1px solid var(--card-border);
+border-radius: 24px;
+box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+display: flex;
+flex-direction: column;
+height: 600px;
+position: relative;
+z-index: 10;
+overflow: hidden;
+}
+
+.chatHeader{
+padding: 20px 25px;
+font-size: 18px;
+font-weight: 600;
+border-bottom: 1px solid var(--card-border);
+background: rgba(255,255,255,0.1);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.chatMessages{
+flex: 1;
+padding: 25px;
+overflow-y: auto;
+display: flex;
+flex-direction: column;
+gap: 16px;
+scroll-behavior: smooth;
+}
+
+/* Chat Bubbles Apple Style */
+.userMessage{
+align-self: flex-end;
+background: var(--accent);
+color: white;
+padding: 12px 18px;
+border-radius: 20px;
+border-bottom-right-radius: 4px; /* Apple iMessage style */
+max-width: 70%;
+word-wrap: break-word;
+font-size: 15px;
+line-height: 1.4;
+box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.aiMessage{
+align-self: flex-start;
+background: var(--card-bg);
+color: var(--text);
+border: 1px solid var(--card-border);
+padding: 12px 18px;
+border-radius: 20px;
+border-bottom-left-radius: 4px;
+max-width: 70%;
+word-wrap: break-word;
+font-size: 15px;
+line-height: 1.4;
+box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.chatMessages::-webkit-scrollbar{
+width: 6px;
+}
+
+.chatMessages::-webkit-scrollbar-thumb{
+background: var(--text-secondary);
+border-radius: 10px;
+opacity: 0.5;
+}
+
+.chatInputArea{
+display: flex;
+padding: 20px;
+background: rgba(255,255,255,0.02);
+border-top: 1px solid var(--card-border);
+gap: 12px;
+align-items: center;
+}
+
+.chatInputArea input{
+flex: 1;
+padding: 14px 20px;
+border: 1px solid var(--card-border);
+border-radius: 24px;
+background: var(--bg);
+color: var(--text);
+font-size: 15px;
+outline: none;
+transition: all 0.3s ease;
+box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.chatInputArea input:focus{
+border-color: var(--accent);
+box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+.chatInputArea input::placeholder{
+color: var(--text-secondary);
+}
+
+.chatInputArea button{
+padding: 12px 20px;
+background: var(--accent);
+color: white;
+border: none;
+border-radius: 24px;
+cursor: pointer;
+font-size: 16px;
+font-weight: 500;
+transition: all 0.2s ease;
+box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.chatInputArea button:hover{
+transform: scale(1.05);
+background: #0066cc;
+}
+
+.robotBackground{
+position:fixed;
+bottom:30px;
+right:30px;
+font-size:120px;
+opacity:0.04;
+pointer-events:none;
+z-index: 0;
+}
+
+/* Specific Section Backgrounds (Animated) */
+
+#sunnyBackground{
+position:absolute;
+top:0; left:0; width:100%; height:100%;
+background:linear-gradient(to bottom, rgba(86,204,242,0.25), rgba(47,128,237,0.25));
+z-index:-2;
+}
+body.dark #sunnyBackground { background:linear-gradient(to bottom, rgba(86,204,242,0.05), rgba(47,128,237,0.05)); }
+
+#fogBackground, #analyticsBackground{
+position:absolute;
+top:0; left:0; width:100%; height:100%;
+background:linear-gradient(to bottom, rgba(189,195,199,0.25), rgba(44,62,80,0.25));
+z-index:-2;
+}
+body.dark #fogBackground, body.dark #analyticsBackground { background:linear-gradient(to bottom, rgba(189,195,199,0.05), rgba(44,62,80,0.05)); }
+
+#stormBackground, #aiStormBackground{
+position:absolute;
+top:0; left:0; width:100%; height:100%;
+background:linear-gradient(to bottom, rgba(20,30,48,0.25), rgba(36,59,85,0.25));
+z-index:-2;
+}
+body.dark #stormBackground, body.dark #aiStormBackground { background:linear-gradient(to bottom, rgba(20,30,48,0.1), rgba(36,59,85,0.1)); }
+
+#chatBackground{
+position:absolute;
+top:0; left:0; width:100%; height:100%;
+background: 
+    radial-gradient(circle at 10% 20%, rgba(255, 42, 133, 0.05), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.05), transparent 40%);
+z-index:-2;
+}
+body.dark #chatBackground {
+background: 
+    radial-gradient(circle at 10% 20%, rgba(255, 42, 133, 0.1), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.1), transparent 40%);
+}
+
+
+/* Theme Toggle Button */
+#themeToggle{
+font-size:24px;
+background: none;
+border: none;
+cursor:pointer;
+transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+color: var(--text);
+padding: 10px;
+}
+
+#themeToggle:hover{
+transform:scale(1.2) rotate(15deg);
+}
+
+/* Animations that are strictly necessary for elements */
+.analyticsFog, .fog{
+position:absolute;
+width:600px; height:300px;
+background:radial-gradient(circle, rgba(255,255,255,0.4), transparent);
+border-radius:50%;
+filter:blur(60px);
+opacity:0.4;
+animation:fogMove 20s linear infinite;
+pointer-events: none;
+}
+body.dark .analyticsFog, body.dark .fog { opacity: 0.1; }
+
+@keyframes fogMove{
+0%{transform:translateX(-400px)}
+100%{transform:translateX(120vw)}
+}
+
+.cloud{
+position:absolute;
+background:rgba(255,255,255,0.9);
+border-radius:50px;
+filter: blur(8px);
+animation:cloudMove 30s linear infinite;
+pointer-events: none;
+}
+body.dark .cloud { background:rgba(255,255,255,0.25); }
+
+.cloud::before, .cloud::after{
+content:"";
+position:absolute;
+background:inherit;
+border-radius:50%;
+}
+.cloud::before{ width:60px; height:60px; top:-20px; left:10px; }
+.cloud::after{ width:80px; height:80px; top:-35px; left:40px; }
+
+@keyframes cloudMove{
+0%{transform:translateX(-200px)}
+100%{transform:translateX(120vw)}
+}
+
+.stormCloud, .aiStormCloud{
+position:absolute;
+width:500px; height:250px;
+background:radial-gradient(circle, rgba(0,0,0,0.3), transparent);
+border-radius:50%;
+filter:blur(50px);
+opacity:0.5;
+animation:stormMove 25s linear infinite;
+pointer-events: none;
+}
+body.dark .stormCloud, body.dark .aiStormCloud { opacity: 0.3; }
+
+@keyframes stormMove{
+0%{transform:translateX(-500px)}
+100%{transform:translateX(120vw)}
+}
+
+/* Ensure no harsh blacks/whites on dark mode toggle without transitions */
+* {
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Turn off transitions for moving elements */
+.stormCloud, .aiStormCloud, .cloud, .fog, .analyticsFog, .raindrop {
+    transition: none;
+}
