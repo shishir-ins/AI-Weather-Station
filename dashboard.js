@@ -1,35 +1,45 @@
 // -----------------------------
-// Theme toggle
+// Theme toggle + title
 // -----------------------------
 document.addEventListener("DOMContentLoaded", function () {
+
   const toggle = document.getElementById("themeToggle");
 
-  toggle.addEventListener("click", function () {
-    document.body.classList.toggle("dark");
+  document.title = "CLYMBOT - AI Weather Station";
 
-    if (document.body.classList.contains("dark")) {
-      // dark mode active
-      toggle.innerHTML = "☀️";
-    } else {
-      toggle.innerHTML = "🌙";
-    }
-  });
+  if (toggle) {
+    toggle.addEventListener("click", function () {
+
+      document.body.classList.toggle("dark");
+
+      if (document.body.classList.contains("dark")) {
+        toggle.innerHTML = "🌙";
+      } else {
+        toggle.innerHTML = "☀️";
+      }
+
+    });
+  }
+
 });
+
 
 // -----------------------------
 // Tabs
 // -----------------------------
 function showTab(tab) {
+
   document.querySelectorAll(".tab").forEach(t => {
     t.classList.add("hidden");
   });
 
   const el = document.getElementById(tab);
   if (el) el.classList.remove("hidden");
+
 }
 
-// make available to inline onclick in HTML
 window.showTab = showTab;
+
 
 // -----------------------------
 // Firebase (BACKEND – unchanged)
@@ -37,8 +47,7 @@ window.showTab = showTab;
 var firebaseConfig = {
   apiKey: "AIzaSyBrHiF3lIhmeGtgdsIzWKiQHIsmYakfbDs",
   authDomain: "ai-weather-station-cbdc9.firebaseapp.com",
-  databaseURL:
-    "https://ai-weather-station-cbdc9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  databaseURL: "https://ai-weather-station-cbdc9-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ai-weather-station-cbdc9",
   storageBucket: "ai-weather-station-cbdc9.appspot.com",
   messagingSenderId: "123456789",
@@ -48,114 +57,222 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
-// simple live bindings for main dashboard numbers
+
+// -----------------------------
+// SENSOR VALUES
+// -----------------------------
 db.ref("weather/temperature").on("value", snap => {
-  document.getElementById("temp").innerText = snap.val() + " °C";
+
+  const el = document.getElementById("temp");
+  if (el) el.innerText = snap.val() + " °C";
+
 });
 
 db.ref("weather/humidity").on("value", snap => {
-  document.getElementById("hum").innerText = snap.val() + " %";
+
+  const el = document.getElementById("hum");
+  if (el) el.innerText = snap.val() + " %";
+
 });
 
 db.ref("weather/rain").on("value", snap => {
-  document.getElementById("rain").innerText = snap.val();
+
+  const el = document.getElementById("rain");
+  if (el) el.innerText = snap.val();
+
 });
 
+
 // -----------------------------
-// FREE external weather: Open‑Meteo (no API key)
+// AI suggestions
 // -----------------------------
-async function fetchOpenMeteoByCoords(lat, lon) {
-  const url =
-    `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lon}` +
-    `&hourly=temperature_2m,relative_humidity_2m,precipitation_probability` +
-    `&current_weather=true&timezone=auto`;
+db.ref("weather").on("value", snap => {
 
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json();
+  let data = snap.val();
 
-  const current = data.current_weather || {};
-  const humiditySeries =
-    data.hourly && data.hourly.relative_humidity_2m;
-  const precipSeries =
-    data.hourly && data.hourly.precipitation_probability;
-  const timeArray = data.hourly && data.hourly.time;
-  const index =
-    timeArray && current.time
-      ? timeArray.indexOf(current.time)
-      : -1;
+  let suggestion = "Weather normal";
 
-  const humidity =
-    index >= 0 && humiditySeries ? humiditySeries[index] : null;
-  const precipProb =
-    index >= 0 && precipSeries ? precipSeries[index] : null;
+  if (data.temperature > 35) suggestion = "🔥 High heat. Stay hydrated.";
+  if (data.humidity > 75) suggestion = "💧 High humidity detected.";
+  if (data.rain == 1) suggestion = "🌧 Rain likely. Carry umbrella.";
 
-  return {
-    temp:
-      typeof current.temperature === "number"
-        ? current.temperature
-        : null,
-    humidity: typeof humidity === "number" ? humidity : null,
-    rainProb: typeof precipProb === "number" ? precipProb : null,
-    description: `wind ${current.windspeed} km/h`
-  };
-}
+  const suggestionEl = document.getElementById("suggestion");
+  if (suggestionEl) suggestionEl.innerText = suggestion;
 
-// Fuse your sensor data + external data into a rain probability
-async function getFusedWeather(sensorData) {
-  let external = null;
+  let status = "Normal";
+  let icon = "⛅";
+  let bg = "normal";
 
-  try {
-    if (navigator.geolocation) {
-      const pos = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          { timeout: 7000 }
-        );
-      });
-
-      external = await fetchOpenMeteoByCoords(
-        pos.coords.latitude,
-        pos.coords.longitude
-      );
-    }
-  } catch (e) {
-    external = null;
+  if (data.rain == 1) {
+    status = "Rainy";
+    icon = "🌧";
+    bg = "rainy";
+  }
+  else if (data.humidity > 75) {
+    status = "Humid";
+    icon = "🌫";
+    bg = "humid";
+  }
+  else if (data.temperature > 32) {
+    status = "Hot";
+    icon = "☀";
+    bg = "sunny";
   }
 
-  // fallback: just sensors if external fails
-  const humidity = sensorData.humidity;
-  let rainProb = 10;
+  const statusElement = document.getElementById("weatherStatus");
+  const iconElement = document.getElementById("weatherIcon");
 
-  if (humidity > 75) rainProb += 25;
-  if (humidity > 85) rainProb += 15;
-  if (sensorData.rain == 1) rainProb = Math.max(rainProb, 85);
+  if (statusElement) statusElement.innerText = status;
+  if (iconElement) iconElement.innerText = icon;
 
-  if (external && typeof external.rainProb === "number") {
-    rainProb = Math.max(rainProb, external.rainProb);
+  const background = document.getElementById("weatherBackground");
+
+  if (background) {
+    background.className = "";
+    background.classList.add(bg);
   }
 
-  rainProb = Math.max(0, Math.min(100, Math.round(rainProb)));
+});
 
-  return { external, rainProb };
+
+// -----------------------------
+// Chatbot – ClymBot
+// -----------------------------
+function normalizeText(text) {
+  return text.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-// -----------------------------
-// Graph arrays + Chart.js
-// -----------------------------
-let tempData = [];
-let humData = [];
-let labels = [];
+const smallTalkDatabase = [
 
-const tempCtx = document.getElementById("tempChart").getContext("2d");
-const tempChart = new Chart(tempCtx, {
-  type: "line",
-  data: {
-    labels: labels,
-    datasets: [
-      {
+  {
+    keys: ["hello", "hi", "hey"],
+    reply: "Hi there! I’m ClymBot, your AI weather assistant. Ask me about rain chances, temperature, or just chat."
+  },
+
+  {
+    keys: ["how are you", "how r u"],
+    reply: "ClymBot is feeling lightly cloudy with a strong chance of helping you. How are you?"
+  },
+
+  {
+    keys: ["who are you", "what are you"],
+    reply: "I’m ClymBot – an AI that reads your weather station sensors and explains the weather in simple language."
+  },
+
+  {
+    keys: ["thank", "thanks"],
+    reply: "You’re welcome! ClymBot is always here if you need another forecast."
+  },
+
+  {
+    keys: ["help", "what can you do"],
+    reply: "ClymBot can answer questions about rain, temperature, humidity, current conditions, and simple predictions based on your sensors."
+  }
+
+];
+
+
+async function buildChatReply(input, data) {
+
+  const lower = normalizeText(input);
+
+  for (const item of smallTalkDatabase) {
+    if (item.keys.some(k => lower.includes(k))) return item.reply;
+  }
+
+  if (lower.includes("rain") || lower.includes("umbrella")) {
+
+    let rainProb = 10;
+
+    if (data.humidity > 75) rainProb += 40;
+    if (data.humidity > 85) rainProb += 15;
+    if (data.rain == 1) rainProb = 90;
+
+    let base = `From the sensors, humidity is ${data.humidity}% and rain flag is ${data.rain}. ClymBot estimates about ${rainProb}% chance of rain soon.`;
+
+    if (rainProb >= 70) base += " Taking an umbrella is a very good idea. 🌧";
+    else if (rainProb >= 40) base += " It might rain, so a small umbrella is safe.";
+    else base += " Rain looks unlikely right now.";
+
+    return base;
+
+  }
+
+  if (lower.includes("temperature") || lower.includes("hot") || lower.includes("cold")) {
+
+    let t = data.temperature;
+    let extra = "";
+
+    if (t >= 35) extra = " It’s very hot. Avoid strong sun and drink plenty of water.";
+    else if (t >= 30) extra = " It’s warm; light clothing will feel comfortable.";
+    else if (t <= 15) extra = " It’s cooler. A jacket is a good idea.";
+
+    return `ClymBot sees ${t}°C with humidity at ${data.humidity}%.` + extra;
+
+  }
+
+  if (lower.includes("humidity")) {
+    return `ClymBot reports humidity around ${data.humidity}%. Higher humidity makes air feel heavier.`;
+  }
+
+  return `ClymBot currently sees ${data.temperature}°C and ${data.humidity}% humidity from your station.`;
+
+}
+
+
+// -----------------------------
+// Send Message
+// -----------------------------
+function sendMessage() {
+
+  const inputBox = document.getElementById("userInput");
+  const input = inputBox.value.trim();
+
+  if (input === "") return;
+
+  const chatbox = document.getElementById("chatbox");
+
+  chatbox.innerHTML += `<div class="userMessage">${input}</div>`;
+
+  inputBox.value = "";
+
+  db.ref("weather").once("value").then(async snap => {
+
+    const data = snap.val();
+    const reply = await buildChatReply(input, data);
+
+    chatbox.innerHTML += `<div class="aiMessage">🤖 ClymBot: ${reply}</div>`;
+
+    chatbox.scrollTop = chatbox.scrollHeight;
+
+  });
+
+}
+
+window.sendMessage = sendMessage;
+
+
+// -----------------------------
+// CHARTS (fixed loading error)
+// -----------------------------
+document.addEventListener("DOMContentLoaded", function () {
+
+  const tempCanvas = document.getElementById("tempChart");
+  const humCanvas = document.getElementById("humChart");
+
+  if (!tempCanvas || !humCanvas) return;
+
+  let tempData = [];
+  let humData = [];
+  let labels = [];
+
+  const tempChart = new Chart(tempCanvas.getContext("2d"), {
+
+    type: "line",
+
+    data: {
+      labels: labels,
+      datasets: [{
         label: "Temperature",
         data: tempData,
         borderColor: "#ff4d4d",
@@ -163,31 +280,18 @@ const tempChart = new Chart(tempCtx, {
         borderWidth: 3,
         tension: 0.4,
         fill: true
-      }
-    ]
-  },
-  options: {
-    plugins: { legend: { labels: { color: "#fff" } } },
-    scales: {
-      x: {
-        ticks: { color: "#ffffff" },
-        grid: { color: "rgba(255,255,255,0.1)" }
-      },
-      y: {
-        ticks: { color: "#ffffff" },
-        grid: { color: "rgba(255,255,255,0.1)" }
-      }
+      }]
     }
-  }
-});
 
-const humCtx = document.getElementById("humChart").getContext("2d");
-const humChart = new Chart(humCtx, {
-  type: "line",
-  data: {
-    labels: labels,
-    datasets: [
-      {
+  });
+
+  const humChart = new Chart(humCanvas.getContext("2d"), {
+
+    type: "line",
+
+    data: {
+      labels: labels,
+      datasets: [{
         label: "Humidity",
         data: humData,
         borderColor: "#00e5ff",
@@ -195,389 +299,33 @@ const humChart = new Chart(humCtx, {
         borderWidth: 3,
         tension: 0.4,
         fill: true
-      }
-    ]
-  }
-});
-
-// -----------------------------
-// Main realtime weather listener
-// (sensors + Open‑Meteo fusion)
-// -----------------------------
-db.ref("weather").on("value", async snap => {
-  const data = snap.val() || {};
-
-  // external + fused rain probability
-  const fused = await getFusedWeather(data);
-  const external = fused.external;
-  const rainProb = fused.rainProb;
-
-  // sun display
-  const sun = document.getElementById("sunGlow");
-  if (sun) {
-    if (data.temperature > 32) {
-      sun.style.display = "block";
-    } else {
-      sun.style.display = "none";
+      }]
     }
-  }
 
-  // rain animation
-  const rainContainer = document.getElementById("rainContainer");
-  if (rainContainer) {
-    rainContainer.innerHTML = "";
-    if (rainProb >= 50) {
-      const drops = rainProb >= 80 ? 120 : 80;
-      for (let i = 0; i < drops; i++) {
-        const drop = document.createElement("div");
-        drop.classList.add("raindrop");
-        drop.style.left = Math.random() * 100 + "vw";
-        drop.style.animationDuration = 0.5 + Math.random() + "s";
-        rainContainer.appendChild(drop);
-      }
-    }
-  }
-
-  // store history (backend path kept the same)
-  const timestamp = Date.now();
-  db.ref("weather_history/" + timestamp).set({
-    temperature: data.temperature,
-    humidity: data.humidity,
-    rain: data.rain
   });
 
-  // derive trends + suggestion text
-  let tempTrend = "Stable";
-  let humTrend = "Stable";
 
-  if (data.temperature > 32) tempTrend = "Rising";
-  if (data.temperature > 35) tempTrend = "Strongly Rising";
-  if (data.humidity > 60) humTrend = "Increasing";
-  if (data.humidity > 80) humTrend = "High";
+  db.ref("weather").on("value", snap => {
 
-  const suggestionParts = [];
+    const data = snap.val();
 
-  if (external) {
-    suggestionParts.push(
-      `External weather suggests about ${Math.round(
-        external.temp
-      )}°C with ${external.humidity}% humidity (${external.description}).`
-    );
-  }
+    const time = new Date().toLocaleTimeString();
 
-  if (data.temperature > 35) {
-    suggestionParts.push(
-      "It feels very hot. Stay hydrated and avoid direct sun in the afternoon."
-    );
-  } else if (data.temperature > 30) {
-    suggestionParts.push("It's quite warm; light clothing is recommended.");
-  }
+    labels.push(time);
+    tempData.push(data.temperature);
+    humData.push(data.humidity);
 
-  if (data.humidity > 80) {
-    suggestionParts.push(
-      "Humidity is high, so it may feel heavier than the actual temperature."
-    );
-  }
+    if (labels.length > 20) {
 
-  if (rainProb >= 80) {
-    suggestionParts.push("Rain is very likely. Carry an umbrella or raincoat. 🌧");
-  } else if (rainProb >= 50) {
-    suggestionParts.push(
-      "There is a fair chance of rain, so a compact umbrella is a good idea."
-    );
-  } else {
-    suggestionParts.push(
-      "Rain risk is low for now, but the sky can still change quickly."
-    );
-  }
+      labels.shift();
+      tempData.shift();
+      humData.shift();
 
-  const aiSuggestion = suggestionParts.join(" ");
+    }
 
-  // status + icon + background (Apple‑like labels)
-  let statusLabel = "Normal";
-  let icon = "⛅";
-  let bg = "normal";
+    tempChart.update();
+    humChart.update();
 
-  if (data.rain == 1 || rainProb >= 70) {
-    statusLabel = "Rainy";
-    icon = "🌧";
-    bg = "rainy";
-  } else if (data.humidity > 80) {
-    statusLabel = "Very Humid";
-    icon = "🌫";
-    bg = "humid";
-  } else if (data.temperature > 35) {
-    statusLabel = "Very Hot";
-    icon = "🔥";
-    bg = "sunny";
-  } else if (data.temperature > 32) {
-    statusLabel = "Hot";
-    icon = "☀";
-    bg = "sunny";
-  }
+  });
 
-  if (external && external.description) {
-    statusLabel += " · " + external.description;
-  }
-
-  // update AI section
-  document.getElementById("rainProb").innerText = rainProb + "%";
-  document.getElementById("tempTrend").innerText = tempTrend;
-  document.getElementById("humTrend").innerText = humTrend;
-  document.getElementById("aiSuggestion").innerText = aiSuggestion;
-
-  // update main dashboard status
-  const statusElement = document.getElementById("weatherStatus");
-  const iconElement = document.getElementById("weatherIcon");
-  const bgElement = document.getElementById("weatherBackground");
-
-  if (statusElement) statusElement.innerText = statusLabel;
-  if (iconElement) iconElement.innerText = icon;
-  if (bgElement) {
-    bgElement.className = "";
-    bgElement.classList.add(bg);
-  }
-
-  // update charts
-  const timeLabel = new Date().toLocaleTimeString();
-  labels.push(timeLabel);
-  tempData.push(data.temperature);
-  humData.push(data.humidity);
-
-  if (labels.length > 20) {
-    labels.shift();
-    tempData.shift();
-    humData.shift();
-  }
-
-  tempChart.update();
-  humChart.update();
 });
-
-// -----------------------------
-// Optional: AI prediction from Firebase (kept)
-// -----------------------------
-db.ref("ai_prediction/rain_prediction").on("value", snap => {
-  const prediction = snap.val();
-  if (prediction === null || prediction === undefined) return;
-
-  let text = "No rain expected";
-  if (prediction == 1) {
-    text = "🌧 AI predicts rain";
-  }
-
-  // Append / override existing suggestion slightly
-  const current = document.getElementById("aiSuggestion").innerText || "";
-  document.getElementById("aiSuggestion").innerText =
-    current + " " + text;
-});
-
-// -----------------------------
-// Background elements (clouds / fog / storm) – original logic
-// -----------------------------
-function createClouds() {
-  const bg = document.getElementById("sunnyBackground");
-  if (!bg) return;
-
-  for (let i = 0; i < 7; i++) {
-    let cloud = document.createElement("div");
-    cloud.classList.add("cloud");
-
-    let width = 100 + Math.random() * 120;
-    cloud.style.width = width + "px";
-    cloud.style.height = width * 0.5 + "px";
-
-    cloud.style.top = Math.random() * 250 + "px";
-    cloud.style.left = Math.random() * 100 + "vw";
-
-    cloud.style.animationDuration = 30 + Math.random() * 40 + "s";
-    cloud.style.animationDelay = -Math.random() * 40 + "s";
-
-    bg.appendChild(cloud);
-  }
-}
-createClouds();
-
-function createFog() {
-  const fogBg = document.getElementById("fogBackground");
-  if (!fogBg) return;
-
-  for (let i = 0; i < 10; i++) {
-    let fog = document.createElement("div");
-    fog.classList.add("fog");
-
-    fog.style.top = Math.random() * 300 + "px";
-    fog.style.left = Math.random() * 100 + "vw";
-
-    fog.style.animationDuration = 40 + Math.random() * 40 + "s";
-    fog.style.animationDelay = -Math.random() * 40 + "s";
-
-    fogBg.appendChild(fog);
-  }
-}
-createFog();
-
-function createStorm() {
-  const storm = document.getElementById("stormBackground");
-  if (!storm) return;
-
-  for (let i = 0; i < 8; i++) {
-    let cloud = document.createElement("div");
-    cloud.classList.add("stormCloud");
-
-    cloud.style.top = Math.random() * 300 + "px";
-    cloud.style.left = Math.random() * 100 + "vw";
-
-    cloud.style.animationDuration = 25 + Math.random() * 30 + "s";
-    cloud.style.animationDelay = -Math.random() * 40 + "s";
-
-    storm.appendChild(cloud);
-  }
-}
-createStorm();
-
-function createAnalyticsFog() {
-  const fogBg = document.getElementById("analyticsBackground");
-  if (!fogBg) return;
-
-  for (let i = 0; i < 8; i++) {
-    let fog = document.createElement("div");
-    fog.classList.add("analyticsFog");
-
-    fog.style.top = Math.random() * 400 + "px";
-    fog.style.left = Math.random() * 100 + "vw";
-    fog.style.animationDuration = 40 + Math.random() * 40 + "s";
-    fog.style.animationDelay = -Math.random() * 40 + "s";
-
-    fogBg.appendChild(fog);
-  }
-}
-createAnalyticsFog();
-
-// -----------------------------
-// Chatbot – more human + weather‑aware
-// -----------------------------
-function normalizeText(text) {
-  return text.replace(/\s+/g, " ").trim().toLowerCase();
-}
-
-const smallTalkDatabase = [
-  {
-    keys: ["hello", "hi", "hey"],
-    reply:
-      "Hi there! I'm your AI Weather Assistant. Ask me about rain chances, temperature, or just chat."
-  },
-  {
-    keys: ["how are you", "how r u"],
-    reply:
-      "I'm feeling partly cloudy with a strong chance of helping you. How are you?"
-  },
-  {
-    keys: ["who are you", "what are you"],
-    reply:
-      "I'm a small AI that watches your sensors and live weather data to keep you prepared."
-  },
-  {
-    keys: ["thank", "thanks"],
-    reply: "You're welcome. If you need another forecast, I'm right here."
-  },
-  {
-    keys: ["help", "what can you do"],
-    reply:
-      "You can ask about rain, temperature, humidity, current conditions, or general forecasts."
-  }
-];
-
-async function buildChatReply(input, sensorData) {
-  const lower = normalizeText(input);
-
-  // small talk first
-  for (const item of smallTalkDatabase) {
-    if (item.keys.some(k => lower.includes(k))) {
-      return item.reply;
-    }
-  }
-
-  // use fused helper for local conditions
-  const fused = await getFusedWeather(sensorData);
-  const external = fused.external;
-  const rainProb = fused.rainProb;
-
-  if (lower.includes("rain") || lower.includes("umbrella")) {
-    let base = `Based on humidity (${sensorData.humidity}%) and live data, I estimate about ${rainProb}% chance of rain soon.`;
-    if (rainProb >= 70) {
-      base += " I strongly recommend carrying an umbrella or raincoat. 🌧";
-    } else if (rainProb >= 40) {
-      base += " It may or may not rain, so a small umbrella is a safe idea.";
-    } else {
-      base += " Rain looks unlikely right now.";
-    }
-    return base;
-  }
-
-  if (lower.includes("temperature") || lower.includes("hot") || lower.includes("cold")) {
-    let extra = "";
-    const t = sensorData.temperature;
-    if (t >= 35) {
-      extra =
-        " It's very hot. Avoid direct sunlight for long periods and drink plenty of water.";
-    } else if (t >= 30) {
-      extra = " It's warm; light clothing will be comfortable.";
-    } else if (t <= 15) {
-      extra = " It's on the cooler side. A jacket or hoodie is a good idea.";
-    }
-    return `Right now the local station reads ${t}°C with humidity at ${sensorData.humidity}%.` + extra;
-  }
-
-  if (lower.includes("humidity") || lower.includes("moisture")) {
-    return `Humidity is around ${sensorData.humidity}%. Higher humidity makes the air feel heavier and can make heat feel more intense.`;
-  }
-
-  if (lower.includes("forecast") || lower.includes("weather") || lower.includes("conditions")) {
-    if (external) {
-      return `Locally it's about ${sensorData.temperature}°C with ${sensorData.humidity}% humidity. External data says around ${Math.round(
-        external.temp
-      )}°C with ${external.humidity}% humidity.`;
-    }
-    return `Your station reports ${sensorData.temperature}°C and ${sensorData.humidity}% humidity with rain sensor reading ${sensorData.rain}.`;
-  }
-
-  // generic fallback
-  return `I see about ${sensorData.temperature}°C and ${sensorData.humidity}% humidity from your station. You can ask me about rain chances, temperature, humidity, or general conditions.`;
-}
-
-async function sendMessage() {
-  const inputBox = document.getElementById("userInput");
-  const rawInput = inputBox.value;
-  const input = rawInput.trim();
-
-  if (input === "") return;
-
-  const chatbox = document.getElementById("chatbox");
-
-  // user bubble
-  chatbox.innerHTML += `
-<div class="userMessage">
-${input}
-</div>
-`;
-  inputBox.value = "";
-
-  // pull the latest sensor values from Firebase
-  db.ref("weather")
-    .once("value")
-    .then(async snap => {
-      const data = snap.val() || {};
-      const reply = await buildChatReply(input, data);
-
-      chatbox.innerHTML += `
-<div class="aiMessage">
-🤖 ${reply}
-</div>
-`;
-      chatbox.scrollTop = chatbox.scrollHeight;
-    });
-}
-
-// expose sendMessage for HTML onclick
-window.sendMessage = sendMessage;
