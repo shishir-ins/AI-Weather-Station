@@ -102,17 +102,30 @@ async function fetchOpenMeteoByCoords(lat, lon) {
   };
 }
 
-// Hyderabad, India fixed location: 17.3850° N, 78.4867° E
+// Fuse your sensor data + external data into a rain probability
 async function getFusedWeather(sensorData) {
   let external = null;
 
   try {
-    // Always use Hyderabad coordinates
-    external = await fetchOpenMeteoByCoords(17.3850, 78.4867);
+    if (navigator.geolocation) {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          { timeout: 7000 }
+        );
+      });
+
+      external = await fetchOpenMeteoByCoords(
+        pos.coords.latitude,
+        pos.coords.longitude
+      );
+    }
   } catch (e) {
     external = null;
   }
 
+  // fallback: just sensors if external fails
   const humidity = sensorData.humidity;
   let rainProb = 10;
 
@@ -189,7 +202,7 @@ const humChart = new Chart(humCtx, {
 
 // -----------------------------
 // Main realtime weather listener
-// (sensors + Hyderabad Open‑Meteo fusion)
+// (sensors + Open‑Meteo fusion)
 // -----------------------------
 db.ref("weather").on("value", async snap => {
   const data = snap.val() || {};
@@ -246,7 +259,7 @@ db.ref("weather").on("value", async snap => {
 
   if (external) {
     suggestionParts.push(
-      `Hyderabad external data: about ${Math.round(
+      `External weather suggests about ${Math.round(
         external.temp
       )}°C with ${external.humidity}% humidity (${external.description}).`
     );
@@ -303,8 +316,8 @@ db.ref("weather").on("value", async snap => {
     bg = "sunny";
   }
 
-  if (external) {
-    statusLabel += " · Hyderabad";
+  if (external && external.description) {
+    statusLabel += " · " + external.description;
   }
 
   // update AI section
@@ -353,6 +366,7 @@ db.ref("ai_prediction/rain_prediction").on("value", snap => {
     text = "🌧 AI predicts rain";
   }
 
+  // Append / override existing suggestion slightly
   const current = document.getElementById("aiSuggestion").innerText || "";
   document.getElementById("aiSuggestion").innerText =
     current + " " + text;
@@ -441,7 +455,7 @@ function createAnalyticsFog() {
 createAnalyticsFog();
 
 // -----------------------------
-// Chatbot – more human + weather‑aware for Hyderabad
+// Chatbot – more human + weather‑aware
 // -----------------------------
 function normalizeText(text) {
   return text.replace(/\s+/g, " ").trim().toLowerCase();
@@ -451,7 +465,7 @@ const smallTalkDatabase = [
   {
     keys: ["hello", "hi", "hey"],
     reply:
-      "Hi there! I'm your AI Weather Assistant for Hyderabad. Ask me about rain chances, temperature, or just chat."
+      "Hi there! I'm your AI Weather Assistant. Ask me about rain chances, temperature, or just chat."
   },
   {
     keys: ["how are you", "how r u"],
@@ -461,7 +475,7 @@ const smallTalkDatabase = [
   {
     keys: ["who are you", "what are you"],
     reply:
-      "I'm a small AI that watches your sensors and live Hyderabad weather data to keep you prepared."
+      "I'm a small AI that watches your sensors and live weather data to keep you prepared."
   },
   {
     keys: ["thank", "thanks"],
@@ -470,7 +484,7 @@ const smallTalkDatabase = [
   {
     keys: ["help", "what can you do"],
     reply:
-      "You can ask about rain, temperature, humidity, current conditions in Hyderabad, or general forecasts."
+      "You can ask about rain, temperature, humidity, current conditions, or general forecasts."
   }
 ];
 
@@ -490,7 +504,7 @@ async function buildChatReply(input, sensorData) {
   const rainProb = fused.rainProb;
 
   if (lower.includes("rain") || lower.includes("umbrella")) {
-    let base = `For Hyderabad, based on humidity (${sensorData.humidity}%) and live data, I estimate about ${rainProb}% chance of rain soon.`;
+    let base = `Based on humidity (${sensorData.humidity}%) and live data, I estimate about ${rainProb}% chance of rain soon.`;
     if (rainProb >= 70) {
       base += " I strongly recommend carrying an umbrella or raincoat. 🌧";
     } else if (rainProb >= 40) {
@@ -510,26 +524,26 @@ async function buildChatReply(input, sensorData) {
     } else if (t >= 30) {
       extra = " It's warm; light clothing will be comfortable.";
     } else if (t <= 15) {
-      extra = " It's on the cooler side. A light jacket is a good idea.";
+      extra = " It's on the cooler side. A jacket or hoodie is a good idea.";
     }
-    return `Right now in Hyderabad the local station reads ${t}°C with humidity at ${sensorData.humidity}%.` + extra;
+    return `Right now the local station reads ${t}°C with humidity at ${sensorData.humidity}%.` + extra;
   }
 
   if (lower.includes("humidity") || lower.includes("moisture")) {
-    return `Humidity in Hyderabad is around ${sensorData.humidity}%. Higher humidity makes the air feel heavier and can make heat feel more intense.`;
+    return `Humidity is around ${sensorData.humidity}%. Higher humidity makes the air feel heavier and can make heat feel more intense.`;
   }
 
   if (lower.includes("forecast") || lower.includes("weather") || lower.includes("conditions")) {
     if (external) {
-      return `In Hyderabad it's about ${sensorData.temperature}°C from your station with ${sensorData.humidity}% humidity. External data says around ${Math.round(
+      return `Locally it's about ${sensorData.temperature}°C with ${sensorData.humidity}% humidity. External data says around ${Math.round(
         external.temp
       )}°C with ${external.humidity}% humidity.`;
     }
-    return `Your station in Hyderabad reports ${sensorData.temperature}°C and ${sensorData.humidity}% humidity with rain sensor reading ${sensorData.rain}.`;
+    return `Your station reports ${sensorData.temperature}°C and ${sensorData.humidity}% humidity with rain sensor reading ${sensorData.rain}.`;
   }
 
   // generic fallback
-  return `I see about ${sensorData.temperature}°C and ${sensorData.humidity}% humidity from your Hyderabad station. You can ask me about rain chances, temperature, humidity, or general conditions.`;
+  return `I see about ${sensorData.temperature}°C and ${sensorData.humidity}% humidity from your station. You can ask me about rain chances, temperature, humidity, or general conditions.`;
 }
 
 async function sendMessage() {
