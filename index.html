@@ -2,7 +2,7 @@
 <html>
 <head>
 
-<title>AI Weather Station</title>
+<title>CLYMBOT</title>
 
 <link rel="stylesheet" href="style.css">
 
@@ -17,7 +17,7 @@
 <div id="sunGlow"></div>
 <header>
 
-<h1>🌦 AI Weather Station</h1>
+<h1>🌦 CLYMBOT</h1>
 
 <button id="themeToggle">🌙</button>
 
@@ -28,7 +28,7 @@
 <button onclick="showTab('dashboard')">Dashboard</button>
 <button onclick="showTab('analytics')">Analytics</button>
 <button onclick="showTab('ai')">AI Center</button>
-<button onclick="showTab('chat')">Chatbot</button>
+<button onclick="showTab('chat')">clymbot</button>
 
 </nav>
 
@@ -69,9 +69,10 @@
 
 <h2>Weather Graphs</h2>
 
-<canvas id="tempChart" width="400" height="150"></canvas>
-
-<canvas id="humChart" width="400" height="150"></canvas>
+<div class="analytics-graphs">
+  <canvas id="tempChart" width="400" height="150"></canvas>
+  <canvas id="humChart" width="400" height="150"></canvas>
+</div>
 
 </section>
 
@@ -114,7 +115,7 @@
 <div class="chatContainer">
 
 <div class="chatHeader">
-🤖 Weather AI Assistant
+🤖 clymbot
 </div>
 
 <div id="chatbox" class="chatMessages"></div>

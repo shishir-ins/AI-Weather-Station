@@ -244,6 +244,20 @@ canvas{
   max-width:100%;
 }
 
+/* side‑by‑side analytics graphs */
+.analytics-graphs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:24px;
+  align-items:stretch;
+  margin-top:24px;
+}
+
+.analytics-graphs canvas{
+  flex:1 1 320px;
+  margin-top:0;
+}
+
 h2{
   margin-bottom:20px;
   font-size:28px;
@@ -338,7 +352,7 @@ body.dark #analyticsBackground{
 }
 body.dark #stormBackground,
 body.dark #aiStormBackground{
-  background:linear-gradient(to bottom, rgba(20,30,48,0.12), rgba(36,59,85,0.14));
+  opacity:0.32;
 }
 
 #chatBackground{

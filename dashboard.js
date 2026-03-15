@@ -233,7 +233,7 @@ reply = `Right now the weather is about ${data.temperature}°C with humidity at 
 }
 
 else if(input.includes("hello") || input.includes("hi")){
-reply = "Hello! I'm your AI Weather Assistant. Ask me anything about the weather conditions. 🤖"
+reply = "Hello! I'm clymbot, your weather assistant. Ask me anything about the weather conditions. 🤖"
 }
 
 else{
