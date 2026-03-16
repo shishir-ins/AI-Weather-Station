@@ -256,6 +256,7 @@ canvas{
 .analytics-graphs canvas{
   flex:1 1 320px;
   margin-top:0;
+  height:220px;
 }
 
 h2{
