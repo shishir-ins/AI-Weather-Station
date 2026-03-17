@@ -1,6 +1,11 @@
+
 import 'dotenv/config';
 import express from 'express';
 import Groq from 'groq-sdk';
+import cors from 'cors';
+app.use(cors({
+  origin: "*"
+}));
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
