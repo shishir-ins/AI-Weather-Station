@@ -159,70 +159,151 @@ db.ref("weather").on("value", snap => {
 
 // chatbot
 
-function sendMessage(){
+const clymbotState = {
+  messages: [],
+  location: null,
+  locationStatus: 'unknown'
+};
 
-  let inputBox = document.getElementById("userInput");
-  let input = inputBox.value.trim().toLowerCase();
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
-  if (input === "") return;
+function renderMessage(role, text) {
+  const chatbox = document.getElementById("chatbox");
+  if (!chatbox) return;
+  const cls = role === 'assistant' ? 'aiMessage' : 'userMessage';
+  const prefix = role === 'assistant' ? '🤖 ' : '';
+  chatbox.insertAdjacentHTML(
+    'beforeend',
+    `<div class="${cls}">${prefix}${escapeHtml(text).replaceAll('\n', '<br>')}</div>`
+  );
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
 
-  let chatbox = document.getElementById("chatbox");
+async function getLatestSensorSnapshot() {
+  const snap = await db.ref("weather").once("value");
+  return snap.val() || {};
+}
 
-  // show user message
+async function ensureLocation() {
+  if (clymbotState.location || clymbotState.locationStatus === 'denied') return;
+  if (!('geolocation' in navigator)) {
+    clymbotState.locationStatus = 'unavailable';
+    return;
+  }
 
-  chatbox.innerHTML += `
-<div class="userMessage">
-${input}
-</div>
-`;
+  clymbotState.locationStatus = 'requesting';
+  await new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clymbotState.location = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude
+        };
+        clymbotState.locationStatus = 'granted';
+        resolve();
+      },
+      () => {
+        clymbotState.locationStatus = 'denied';
+        resolve();
+      },
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 15 * 60 * 1000 }
+    );
+  });
+}
+
+async function sendMessage() {
+  const inputBox = document.getElementById("userInput");
+  const raw = inputBox?.value ?? '';
+  const userText = raw.trim();
+  if (!userText) return;
 
   inputBox.value = "";
+  renderMessage('user', userText);
 
-  // get weather data
-  db.ref("weather").once("value").then((snap) => {
+  // Keep lightweight local history for better conversations
+  clymbotState.messages.push({ role: 'user', content: userText });
+  clymbotState.messages = clymbotState.messages.slice(-20);
 
-    let data = snap.val() || {};
+  // Best-effort location so "next few hours" predictions are real.
+  // If denied, the bot will still chat normally.
+  await ensureLocation();
 
-    let reply = "I'm analyzing the weather data right now.";
+  let sensor = {};
+  try {
+    sensor = await getLatestSensorSnapshot();
+  } catch {
+    sensor = {};
+  }
 
-    // smarter responses
+  renderMessage('assistant', 'Thinking...');
+  const chatbox = document.getElementById("chatbox");
+  const thinkingEl = chatbox?.lastElementChild;
 
-    if (input.includes("rain")) {
-      reply = `Based on the current humidity (${data.humidity}%) and sensor readings, there is a strong chance of rain. You might want to carry an umbrella. 🌧`;
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userText,
+        messages: clymbotState.messages,
+        sensor,
+        location: clymbotState.location
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    const reply = data?.reply || data?.error || 'Something went wrong.';
+
+    if (thinkingEl) {
+      thinkingEl.innerHTML = `🤖 ${escapeHtml(reply).replaceAll('\n', '<br>')}`;
+      thinkingEl.className = 'aiMessage';
+    } else {
+      renderMessage('assistant', reply);
     }
 
-    else if (input.includes("temperature")) {
-      reply = `The current temperature is ${data.temperature}°C. If you're heading outside, dress accordingly! 🌡`;
+    clymbotState.messages.push({ role: 'assistant', content: reply });
+    clymbotState.messages = clymbotState.messages.slice(-20);
+  } catch (e) {
+    const msg = e?.message || 'Network error.';
+    if (thinkingEl) {
+      thinkingEl.innerHTML = `🤖 ${escapeHtml(msg)}`;
+      thinkingEl.className = 'aiMessage';
+    } else {
+      renderMessage('assistant', msg);
     }
-
-    else if (input.includes("humidity")) {
-      reply = `Humidity is currently around ${data.humidity}%. High humidity can make it feel warmer than it actually is. 💧`;
-    }
-
-    else if (input.includes("weather")) {
-      reply = `Right now the weather is about ${data.temperature}°C with humidity at ${data.humidity}%.`;
-    }
-
-    else if (input.includes("hello") || input.includes("hi")) {
-      reply = "Hello! I'm clymbot, your weather assistant. Ask me anything about the weather conditions. 🤖";
-    }
-
-    else {
-      reply = `Right now I'm seeing ${data.temperature}°C temperature and ${data.humidity}% humidity. If you want, ask me about rain predictions or temperature trends.`;
-    }
-
-    // show AI message
-
-    chatbox.innerHTML += `
-<div class="aiMessage">
-🤖 ${reply}
-</div>
-`;
-    chatbox.scrollTop = chatbox.scrollHeight;
-
-  });
-
+    clymbotState.messages.push({ role: 'assistant', content: msg });
+    clymbotState.messages = clymbotState.messages.slice(-20);
+  }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("userInput");
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  }
+
+  // First message
+  if (document.getElementById("chatbox")) {
+    renderMessage(
+      'assistant',
+      "Hey — I'm clymbot. Ask anything, or say “predict the next few hours” for a short-term forecast."
+    );
+    clymbotState.messages.push({
+      role: 'assistant',
+      content:
+        "Hey — I'm clymbot. Ask anything, or say “predict the next few hours” for a short-term forecast."
+    });
+  }
+});
 // Graph arrays
 
 let tempData = [];

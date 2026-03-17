@@ -1,0 +1,15 @@
+{
+  "name": "clymbot-website",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "openai": "^4.104.0"
+  }
+}
+
