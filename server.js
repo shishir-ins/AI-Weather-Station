@@ -4,16 +4,12 @@ import express from 'express';
 import Groq from 'groq-sdk';
 import cors from 'cors';
 
-const app = express();   // ✅ FIRST create app
+const app = express();
 
-app.use(cors({           // ✅ THEN use cors
+app.use(cors({
   origin: "*"
 }));
 
-app.use(express.json({ limit: '1mb' }));
-
-// rest of your code...
-const app = express();
 app.use(express.json({ limit: '1mb' }));
 
 // Serve static files
