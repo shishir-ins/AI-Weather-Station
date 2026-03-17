@@ -218,6 +218,8 @@ async function ensureLocation() {
   });
 }
 
+// (ONLY CHANGE IS INSIDE sendMessage → fetch URL FIXED)
+
 async function sendMessage() {
   const inputBox = document.getElementById("userInput");
   const raw = inputBox?.value ?? '';
@@ -227,12 +229,9 @@ async function sendMessage() {
   inputBox.value = "";
   renderMessage('user', userText);
 
-  // Keep lightweight local history for better conversations
   clymbotState.messages.push({ role: 'user', content: userText });
   clymbotState.messages = clymbotState.messages.slice(-20);
 
-  // Best-effort location so "next few hours" predictions are real.
-  // If denied, the bot will still chat normally.
   await ensureLocation();
 
   let sensor = {};
@@ -247,7 +246,7 @@ async function sendMessage() {
   const thinkingEl = chatbox?.lastElementChild;
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch('https://clymbot.onrender.com/api/chat', {  // ✅ FIXED
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -270,6 +269,7 @@ async function sendMessage() {
 
     clymbotState.messages.push({ role: 'assistant', content: reply });
     clymbotState.messages = clymbotState.messages.slice(-20);
+
   } catch (e) {
     const msg = e?.message || 'Network error.';
     if (thinkingEl) {
